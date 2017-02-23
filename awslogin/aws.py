@@ -9,7 +9,7 @@ class Consumer(object):
     def __init__(self, cfg):
         self.credentials_file = cfg.get('aws', 'credentials_file')
         self.region = cfg.get('aws', 'region')
-	self.output_format = cfg.get('aws', 'output_format')
+        self.output_format = cfg.get('aws', 'output_format')
         self.role_arn = cfg.get('aws', 'role_arn')
         self.principal_arn = None
         self.token = None
@@ -18,7 +18,7 @@ class Consumer(object):
     def store_credentials(self):
         saml_assertion = self.idp.get_saml_assertion()
         self._get_token(saml_assertion)
-	self._write_config()
+        self._write_config()
 
     def _write_config(self):
         config = ConfigParser.RawConfigParser()
@@ -27,13 +27,13 @@ class Consumer(object):
         if not config.has_section('saml'):
             config.add_section('saml')
 
-	config.set('saml', 'output', self.output_format)
+        config.set('saml', 'output', self.output_format)
         config.set('saml', 'region', self.region)
         config.set('saml', 'aws_access_key_id', self.token.credentials.access_key)
         config.set('saml', 'aws_secret_access_key', self.token.credentials.secret_key)
         config.set('saml', 'aws_session_token', self.token.credentials.session_token)
 
-	with open(self.credentials_file, 'w+') as configfile:
+        with open(self.credentials_file, 'w+') as configfile:
             config.write(configfile)
 
     def _extract_aws_roles(self, saml_assertion):
