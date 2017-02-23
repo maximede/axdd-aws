@@ -11,15 +11,13 @@ class Consumer(object):
         self.region = cfg.get('aws', 'region')
 	self.output_format = cfg.get('aws', 'output_format')
         self.role_arn = cfg.get('aws', 'role_arn')
-        self.principal_arn = cfg.get('aws', 'principal_arn')
+        self.principal_arn = None
         self.token = None
         self.idp = IdentityProvider(cfg)
 
     def store_credentials(self):
         saml_assertion = self.idp.get_saml_assertion()
-        if not (self.role_arn and self.principal_arn):
-            self._set_role(saml_assertion)
-        self._set_token(saml_assertion)
+        self._get_token(saml_assertion)
 	self._write_config()
 
     def _write_config(self):
@@ -47,9 +45,14 @@ class Consumer(object):
                     aws_roles.append(value.text)
         return aws_roles
 
-    def _set_role(self, saml_assertion):
+    def _get_role_and_principal(self, saml_assertion):
         aws_roles = self._extract_aws_roles(saml_assertion)
-        if len(aws_roles) == 1:
+        if self.role_arn:
+            for role in aws_roles:
+                (role_arn, principal_arn) = role.split(',')
+                if role_arn == self.role_arn:
+                    break
+        elif len(aws_roles) == 1:
             (role_arn, principal_arn) = aws_roles[0].split(',')
         else:
             print ''
@@ -65,10 +68,9 @@ class Consumer(object):
 
             (role_arn, principal_arn) = aws_roles[int(selected_idx)].split(',')
 
-        self.role_arn = role_arn
-        self.principal_arn = principal_arn
+        return (role_arn, principal_arn)
 
-    def _set_token(self, saml_assertion):
+    def _get_token(self, saml_assertion):
+        (role_arn, principal_arn) = self._get_role_and_principal(saml_assertion)
         conn = boto.sts.connect_to_region(self.region, anon=True)
-        self.token = conn.assume_role_with_saml(
-            self.role_arn, self.principal_arn, saml_assertion)
+        self.token = conn.assume_role_with_saml(role_arn, principal_arn, saml_assertion)
