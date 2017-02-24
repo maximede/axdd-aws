@@ -1,4 +1,4 @@
-from aws import Consumer
+from awslogin.aws import Consumer
 import ConfigParser
 import logging
 
@@ -8,7 +8,7 @@ import logging
 
 if __name__ == "__main__":
     cfg = ConfigParser.ConfigParser()
-    cfg.read('settings.cfg')
+    cfg.read('awslogin/settings.cfg')
     consumer = Consumer(cfg)
     consumer.store_credentials()
 
