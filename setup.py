@@ -16,6 +16,7 @@ setup(
         'requests',
         'bs4'
     ],
+    data_files=[('config', ['awslogin/settings.cfg'])],
     license='Apache License, Version 2.0',
     description='',
     long_description=README,

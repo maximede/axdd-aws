@@ -1,6 +1,7 @@
 import boto.sts
 import xml.etree.ElementTree as ET
 import ConfigParser
+import os
 from base64 import b64decode
 from idp import IdentityProvider
 
@@ -23,7 +24,8 @@ class Consumer(object):
 
     def _get_config(self):
         cfg = ConfigParser.ConfigParser()
-        cfg.read('settings.cfg')
+        cfg.read(os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'settings.cfg'))
         return cfg
 
     def _write_credentials(self):
