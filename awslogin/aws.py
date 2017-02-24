@@ -1,6 +1,7 @@
 import boto.sts
 import xml.etree.ElementTree as ET
 import ConfigParser
+import errno
 import os
 from base64 import b64decode
 from idp import IdentityProvider
@@ -40,6 +41,17 @@ class Consumer(object):
         config.set('saml', 'aws_access_key_id', self.token.credentials.access_key)
         config.set('saml', 'aws_secret_access_key', self.token.credentials.secret_key)
         config.set('saml', 'aws_session_token', self.token.credentials.session_token)
+
+        # https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python/600612#600612
+        if not os.path.exists(self.credentials_file):
+            try:
+                path = os.path.dirname(self.credentials_file)
+                os.makedirs(path)
+            except OSError as exc:  # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    raise
 
         with open(self.credentials_file, 'w+') as configfile:
             config.write(configfile)
