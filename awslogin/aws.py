@@ -6,7 +6,7 @@ from idp import IdentityProvider
 
 
 class Consumer(object):
-    def __init___(self):
+    def __init__(self):
         cfg = self._get_config()
         self.credentials_file = cfg.get('aws', 'credentials_file')
         self.region = cfg.get('aws', 'region')
