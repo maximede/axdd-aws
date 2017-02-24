@@ -6,7 +6,8 @@ from idp import IdentityProvider
 
 
 class Consumer(object):
-    def __init__(self, cfg):
+    def __init___(self):
+        cfg = self._get_config()
         self.credentials_file = cfg.get('aws', 'credentials_file')
         self.region = cfg.get('aws', 'region')
         self.output_format = cfg.get('aws', 'output_format')
@@ -18,9 +19,14 @@ class Consumer(object):
     def store_credentials(self):
         saml_assertion = self.idp.get_saml_assertion()
         self._get_token(saml_assertion)
-        self._write_config()
+        self._write_credentials()
 
-    def _write_config(self):
+    def _get_config(self):
+        cfg = ConfigParser.ConfigParser()
+        cfg.read('settings.cfg')
+        return cfg
+
+    def _write_credentials(self):
         config = ConfigParser.RawConfigParser()
         config.read(self.credentials_file)
 
