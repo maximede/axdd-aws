@@ -29,7 +29,24 @@ class Consumer(object):
             os.path.abspath(os.path.dirname(__file__)), 'settings.cfg'))
         return cfg
 
+    def _create_credentials_path(self):
+        if not self.credentials_file:
+            self.credentials_file = os.path.join(
+                os.path.expanduser('~'), '.aws', 'credentials')
+
+        if not os.path.exists(self.credentials_file):
+            try:
+                path = os.path.dirname(self.credentials_file)
+                os.makedirs(path)
+            except OSError as exc:  # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    raise
+
     def _write_credentials(self):
+        self._create_credentials_path()
+
         config = ConfigParser.RawConfigParser()
         config.read(self.credentials_file)
 
@@ -41,17 +58,6 @@ class Consumer(object):
         config.set('saml', 'aws_access_key_id', self.token.credentials.access_key)
         config.set('saml', 'aws_secret_access_key', self.token.credentials.secret_key)
         config.set('saml', 'aws_session_token', self.token.credentials.session_token)
-
-        # https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python/600612#600612
-        if not os.path.exists(self.credentials_file):
-            try:
-                path = os.path.dirname(self.credentials_file)
-                os.makedirs(path)
-            except OSError as exc:  # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(path):
-                    pass
-                else:
-                    raise
 
         with open(self.credentials_file, 'w+') as configfile:
             config.write(configfile)
