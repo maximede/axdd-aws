@@ -7,7 +7,7 @@ from base64 import b64decode
 from idp import IdentityProvider
 
 
-class Consumer(object):
+class CredentialsProvider(object):
     def __init__(self):
         cfg = self._get_config()
         self.credentials_file = cfg.get('aws', 'credentials_file')
@@ -18,7 +18,7 @@ class Consumer(object):
         self.token = None
         self.idp = IdentityProvider(cfg)
 
-    def store_credentials(self):
+    def get_credentials(self):
         saml_assertion = self.idp.get_saml_assertion()
         self._get_token(saml_assertion)
         self._write_credentials()
