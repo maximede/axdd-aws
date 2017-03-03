@@ -31,6 +31,6 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     entry_points = {
-        'console_scripts': ['awslogin=awslogin.login.login'],
+        'console_scripts': ['awslogin=awslogin.login:login'],
     },
 )
