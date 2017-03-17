@@ -83,7 +83,7 @@ class CredentialsProvider(object):
         else:
             print ''
             print 'Please choose the role you would like to assume:'
-            for idx, role in enumerate(aws_roles):
+            for idx, role in enumerate(sorted(aws_roles)):
                 print '[', idx, ']: ', role.split(',')[0]
             print 'Selection: ',
             selected_idx = raw_input()
