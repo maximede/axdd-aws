@@ -72,7 +72,7 @@ class CredentialsProvider(object):
         return aws_roles
 
     def _get_role_and_principal(self, saml_assertion):
-        aws_roles = self._extract_aws_roles(saml_assertion)
+        aws_roles = sorted(self._extract_aws_roles(saml_assertion))
         if self.role_arn:
             for role in aws_roles:
                 (role_arn, principal_arn) = role.split(',')
@@ -83,7 +83,7 @@ class CredentialsProvider(object):
         else:
             print ''
             print 'Please choose the role you would like to assume:'
-            for idx, role in enumerate(sorted(aws_roles)):
+            for idx, role in enumerate(aws_roles):
                 print '[', idx, ']: ', role.split(',')[0]
             print 'Selection: ',
             selected_idx = raw_input()
@@ -93,6 +93,7 @@ class CredentialsProvider(object):
                 self._get_selected_role(saml_assertion)
 
             (role_arn, principal_arn) = aws_roles[int(selected_idx)].split(',')
+            print "You selected {}".format(role_arn)
 
         return (role_arn, principal_arn)
 
