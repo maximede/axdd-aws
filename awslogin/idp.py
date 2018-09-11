@@ -10,6 +10,7 @@ class LoginError(Exception):
 
 class IdentityProvider(object):
     def __init__(self, cfg):
+        self.host_url = cfg.get('idp', 'host_url')
         self.entry_url = cfg.get('idp', 'entry_url')
         self.ssl_verify = cfg.getboolean('idp', 'ssl_verify')
         self.username = cfg.get('idp', 'username')
@@ -60,15 +61,16 @@ class IdentityProvider(object):
             value = input_tag.get('value', '')
             if 'samlresponse' == name.lower():
                 return value
-            elif 'user' == name.lower():
+            elif 'j_username' == name.lower():
                 params[name] = self.username
-            elif 'pass' == name.lower():
+            elif 'j_password' == name.lower():
                 params[name] = self.password
             else:
                 params[name] = value
 
         try:
             url = soup.find_all('form')[0].get('action')
+            url = self.host_url + url
         except IndexError as err:
             # Not a form, and not a SAML assertion
             raise LoginError('Response did not contain a valid SAML assertion')
