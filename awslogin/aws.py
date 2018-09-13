@@ -1,10 +1,13 @@
 import boto.sts
 import xml.etree.ElementTree as ET
-import ConfigParser
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 import errno
 import os
 from base64 import b64decode
-from idp import IdentityProvider
+from .idp import IdentityProvider
 
 
 class CredentialsProvider(object):
@@ -24,7 +27,7 @@ class CredentialsProvider(object):
         self._write_credentials()
 
     def _get_config(self):
-        cfg = ConfigParser.ConfigParser()
+        cfg = configparser.ConfigParser()
         cfg.read(os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'settings.cfg'))
         return cfg
@@ -47,7 +50,7 @@ class CredentialsProvider(object):
     def _write_credentials(self):
         self._create_credentials_path()
 
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(self.credentials_file)
 
         if not config.has_section('saml'):
@@ -81,19 +84,19 @@ class CredentialsProvider(object):
         elif len(aws_roles) == 1:
             (role_arn, principal_arn) = aws_roles[0].split(',')
         else:
-            print ''
-            print 'Please choose the role you would like to assume:'
+            print('')
+            print('Please choose the role you would like to assume:')
             for idx, role in enumerate(aws_roles):
-                print '[', idx, ']: ', role.split(',')[0]
-            print 'Selection: ',
-            selected_idx = raw_input()
+                print("[ {} ]: {}".format(idx, role.split(',')[0]))
+            selected_idx = input('Selection: ')
+            assert isinstance(selected_idx, str)
 
             if int(selected_idx) > (len(aws_roles) - 1):
-                print 'You selected an invalid role index, please try again'
+                print('You selected an invalid role index, please try again')
                 self._get_selected_role(saml_assertion)
 
             (role_arn, principal_arn) = aws_roles[int(selected_idx)].split(',')
-            print "You selected {}".format(role_arn)
+            print("You selected {}".format(role_arn))
 
         return (role_arn, principal_arn)
 

@@ -25,12 +25,12 @@ class IdentityProvider(object):
 
     def _set_userpass(self):
         if self.username:
-            print "Username: %s" % self.username
+            print("Username: {}".format(self.username))
         else:
-            print "Username:",
-            self.username = raw_input()
+            self.username = input('Username: ')
+            assert isinstance(self.username, str)
         self.password = getpass()
-        print ''
+        print('')
 
     def _unset_userpass(self):
         self.username = '##############################################'
@@ -49,7 +49,10 @@ class IdentityProvider(object):
         if response is None:
             response = self.session.get(self.entry_url, verify=self.ssl_verify)
 
-        soup = BeautifulSoup(response.text.decode('utf8'), 'html.parser')
+        try:
+            soup = BeautifulSoup(response.text.decode('utf8'), 'html.parser')
+        except AttributeError:
+            soup = BeautifulSoup(response.text, 'html.parser')
 
         # Login error exits the workflow
         self._detect_login_error(soup)
