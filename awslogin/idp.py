@@ -28,8 +28,11 @@ class IdentityProvider(object):
         if self.username:
             print("Username: {}".format(self.username))
         else:
-            self.username = input('Username: ')
-            assert isinstance(self.username, str)
+            try:
+                self.username = raw_input('Username: ')
+            except NameError:
+                self.username = input('Username: ')
+                assert isinstance(self.username, str)
         self.password = getpass()
         print('')
 

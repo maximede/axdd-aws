@@ -88,8 +88,11 @@ class CredentialsProvider(object):
             print('Please choose the role you would like to assume:')
             for idx, role in enumerate(aws_roles):
                 print("[ {} ]: {}".format(idx, role.split(',')[0]))
-            selected_idx = input('Selection: ')
-            assert isinstance(selected_idx, str)
+            try:
+                selected_idx = raw_input('Selection: ')
+            except NameError:
+                selected_idx = input('Selection: ')
+                assert isinstance(selected_idx, str)
 
             if int(selected_idx) > (len(aws_roles) - 1):
                 print('You selected an invalid role index, please try again')
