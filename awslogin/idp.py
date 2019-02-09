@@ -10,6 +10,7 @@ class LoginError(Exception):
 
 class IdentityProvider(object):
     def __init__(self, cfg):
+        self.host_url = cfg.get('idp', 'host_url')
         self.entry_url = cfg.get('idp', 'entry_url')
         self.ssl_verify = cfg.getboolean('idp', 'ssl_verify')
         self.username = cfg.get('idp', 'username')
@@ -25,12 +26,15 @@ class IdentityProvider(object):
 
     def _set_userpass(self):
         if self.username:
-            print "Username: %s" % self.username
+            print("Username: {}".format(self.username))
         else:
-            print "Username:",
-            self.username = raw_input()
+            try:
+                self.username = raw_input('Username: ')
+            except NameError:
+                self.username = input('Username: ')
+                assert isinstance(self.username, str)
         self.password = getpass()
-        print ''
+        print('')
 
     def _unset_userpass(self):
         self.username = '##############################################'
@@ -49,7 +53,10 @@ class IdentityProvider(object):
         if response is None:
             response = self.session.get(self.entry_url, verify=self.ssl_verify)
 
-        soup = BeautifulSoup(response.text.decode('utf8'), 'html.parser')
+        try:
+            soup = BeautifulSoup(response.text.decode('utf8'), 'html.parser')
+        except AttributeError:
+            soup = BeautifulSoup(response.text, 'html.parser')
 
         # Login error exits the workflow
         self._detect_login_error(soup)
@@ -60,15 +67,16 @@ class IdentityProvider(object):
             value = input_tag.get('value', '')
             if 'samlresponse' == name.lower():
                 return value
-            elif 'user' == name.lower():
+            elif 'j_username' == name.lower():
                 params[name] = self.username
-            elif 'pass' == name.lower():
+            elif 'j_password' == name.lower():
                 params[name] = self.password
             else:
                 params[name] = value
 
         try:
             url = soup.find_all('form')[0].get('action')
+            url = self.host_url + url
         except IndexError as err:
             # Not a form, and not a SAML assertion
             raise LoginError('Response did not contain a valid SAML assertion')
