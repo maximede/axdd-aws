@@ -44,7 +44,7 @@ class IdentityProvider(object):
 
     def _detect_login_error(self, soup):
         try:
-            error = soup.find_all('font', color='#FF0000')[0]  # Hmm
+            error = soup.find_all('p', class_='form-error')[0]
             raise LoginError(error.text)
         except IndexError:
             pass
