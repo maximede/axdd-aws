@@ -1,85 +1,111 @@
+import cgi
+import socket
+import threading
+import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs
+from venv import logger
+
 import requests
-import os
-from bs4 import BeautifulSoup
-from getpass import getpass
 
 
 class LoginError(Exception):
     pass
 
 
+class MyHandler(BaseHTTPRequestHandler):
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.addCORSHeaders()
+        self.end_headers()
+        self.wfile.write("fsd".encode())
+
+    def do_POST(self):
+        ctype, pdict = cgi.parse_header(
+            self.headers['content-type'])
+
+        # boundary data needs to be encoded in a binary format
+
+        if ctype == 'application/x-www-form-urlencoded':
+            length = int(self.headers['content-length'])
+            postvars = parse_qs(
+                self.rfile.read(length).decode('utf8'),
+                keep_blank_values=1)
+            saml_response_ = postvars['SAMLResponse'][0]
+            logger.debug("Saml Response : " + saml_response_)
+            self.server.saml_response = saml_response_
+
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.addCORSHeaders()
+        self.end_headers()
+
+        output = "{'succes':'true'}"
+        self.wfile.write(output.encode())
+
+    def addCORSHeaders(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type,Content-Length,bla")
+
+
+class MyServer(HTTPServer):
+    allow_reuse_address = False
+
+    saml_response = ''
+
+
 class IdentityProvider(object):
     def __init__(self, cfg):
         self.host_url = cfg.get('idp', 'host_url')
+        self.local_port_param_name = cfg.get('idp', 'local_port_param_name')
         self.entry_url = cfg.get('idp', 'entry_url')
-        self.ssl_verify = cfg.getboolean('idp', 'ssl_verify')
-        self.username = cfg.get('idp', 'username')
-        self.password = cfg.get('idp', 'password')
         self.session = requests.Session()
 
     def get_saml_assertion(self):
-        if not (self.username and self.password):
-            self._set_userpass()
         saml_assertion = self._login_workflow()
-        self._unset_userpass()
         return saml_assertion
 
-    def _set_userpass(self):
-        if self.username:
-            print("Username: {}".format(self.username))
-        else:
+    def _login_workflow(self):
+
+        port_number = 8080
+
+        while True:
             try:
-                self.username = raw_input('Username: ')
-            except NameError:
-                self.username = input('Username: ')
-                assert isinstance(self.username, str)
-        self.password = getpass()
-        print('')
+                saml_receiver_server = MyServer(("localhost", port_number), MyHandler)
 
-    def _unset_userpass(self):
-        self.username = '##############################################'
-        self.password = '##############################################'
-        del self.username
-        del self.password
+                threading.Thread(target=saml_receiver_server.serve_forever).start()
 
-    def _detect_login_error(self, soup):
-        try:
-            error = soup.find_all('p', class_='form-error')[0]
-            raise LoginError(error.text)
-        except IndexError:
-            pass
+                print("Trying to open server on port  %d" % port_number)
+            except socket.error:
+                print("Failed to open server on port  %d" % port_number)
 
-    def _login_workflow(self, response=None):
-        if response is None:
-            response = self.session.get(self.entry_url, verify=self.ssl_verify)
-
-        try:
-            soup = BeautifulSoup(response.text.decode('utf8'), 'html.parser')
-        except AttributeError:
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Login error exits the workflow
-        self._detect_login_error(soup)
-
-        params = {}
-        for input_tag in soup.find_all('input'):
-            name = input_tag.get('name', '')
-            value = input_tag.get('value', '')
-            if 'samlresponse' == name.lower():
-                return value
-            elif 'j_username' == name.lower():
-                params[name] = self.username
-            elif 'j_password' == name.lower():
-                params[name] = self.password
+                if port_number > 8080 + 100:
+                    success = False
+                    break
+                port_number += 1
             else:
-                params[name] = value
+                success = True
+                break
 
-        try:
-            url = soup.find_all('form')[0].get('action')
-            url = self.host_url + url
-        except IndexError as err:
-            # Not a form, and not a SAML assertion
-            raise LoginError('Response did not contain a valid SAML assertion')
+        if success:
 
-        response = self.session.post(url, data=params, verify=self.ssl_verify)
-        return self._login_workflow(response)
+            # open or show url
+            authorize_url = "%s%d" % (self.entry_url, port_number)
+
+            print("Open a browser at %s" % authorize_url)
+
+            webbrowser.open(authorize_url, new=1, autoraise=True)
+
+            while True:
+                if saml_receiver_server.saml_response:
+                    print("Received SAML token")
+                    logger.debug(saml_receiver_server.saml_response)
+                    saml_response = saml_receiver_server.saml_response
+                    saml_receiver_server.server_close()
+                    break
+
+            return saml_response
+        else:
+            raise Exception('failed to open port')
