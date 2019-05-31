@@ -1,4 +1,5 @@
 import cgi
+import os
 import socket
 import threading
 import webbrowser
@@ -96,6 +97,16 @@ class IdentityProvider(object):
 
             print("Open a browser at %s" % authorize_url)
 
+            # Without this, Chrome on MacOS will not launch unless Chrome
+            # is already open. This is due to an bug in webbbrowser.py that tries to
+            # open web browsers by app name using i.e. 'Chrome' but the actual app
+            # name is 'Google Chrome' on Mac.
+            if isMacOS():
+                try:
+                    webbrowser.register('Google Chrome', None,
+                                        webbrowser.MacOSXOSAScript('Google Chrome'), -1)
+                except AttributeError:
+                    pass  # proceed with default behavior
             webbrowser.open(authorize_url, new=1, autoraise=True)
 
             while True:
@@ -109,3 +120,10 @@ class IdentityProvider(object):
             return saml_response
         else:
             raise Exception('failed to open port')
+
+
+def isMacOS():
+    if os.name == 'darwin':
+        return True
+
+    return False
